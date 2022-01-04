@@ -1,3 +1,5 @@
+import {isNull} from "util";
+
 export default function lexing(text_pr: string): Array<Array<string>> {
     /**
      * LEXING
@@ -11,79 +13,88 @@ export default function lexing(text_pr: string): Array<Array<string>> {
      * Типи, що обробляються: int, float
      *
      *
-      */
-
+     */
+        // todo баг з невідомим символами і неочікувані тектові вставки
     const tokens: Object = {
-        "int ": "int_keyword",
-        "main": "іdentifier",
-        "(": "open parentheses",
-        ")": "close parentheses",
-        "{": "open brace",
-        "return ": "return_keyword",
-        ";": "semicolon",
-        "}": "close brace"
-    }
+            "int ": "int_keyword",
+            "main": "іdentifier",
+            "(": "open parentheses",
+            ")": "close parentheses",
+            "{": "open brace",
+            "return ": "return_keyword",
+            ";": "semicolon",
+            "}": "close brace"
+        }
 
     // вихідна структура даних
-    let lexeme_tab: Array<Array<string>> = []
+    type ACC = Array<Array<string>>
+    let lexeme_tab: ACC = []
 
-    function type_of_number(str: string): Array<Array<string>> {
+    function type_of_number(str: string): ACC {
         /**
          * визначає int або float
-         * все інше ігнорується
          * */
-
 
         if (str.includes('.'))
             return [[/\d[.]\d/.exec(str)[0], "float_nam"]]
         else if (/\d/.test(str))
-            return [[/\d/.exec(str)[0],"int_nam"]]
+            return [[/\d/.exec(str)[0], "int_nam"]]
         return []
     }
 
-    function find_tokens(str: string): Array<Array<string>> {
+    function str_analise(str: string): ACC {
+        /**
+         * знаходить строчки
+         * */
+        return [['"', "open_quote"], [/".*?"/.exec(str)[0].slice(1, -1), "str"], ['"', "close_quote"]]
+    }
+
+    function find_tokens(str: string): ACC | number {
         /**
          * знаходить токени
          * */
-        let acc: Array<Array<string>> = []
-
-        while (str.length != 0) {
-            if (/^[\s ]/.test(str)) {
-                // todo оптимізація
-                // якщо на вході мусор
-                str = str.slice(1)
-                continue
-            }
-            // якщо на вході токен
-            for (let token of Object.keys(tokens)) {
-                if (str.startsWith(token)) {
-                    acc.push([token, tokens[token]])
-                    str = str.slice(token.length)
-                    break
-                }
-            }
-            // якщо на вході число
-            if (/\d/.test(str[0])) {
-                let number = type_of_number(str)
-                acc = acc.concat(number)
-                str = str.slice(number[0][0].length)
+        for (let token of Object.keys(tokens)) {
+            if (str.startsWith(token)) {
+                return [[token, tokens[token]]]
             }
         }
-        return acc
+        return NaN
     }
 
 
-    // на першому етапі визначається все типу string
-    text_pr
-        .split(/(".*?")/g)
-        .map(str => {
-            // якщо строчка знайшлась
-            if (str[0] === '"') {
-                lexeme_tab = lexeme_tab
-                    .concat([['"', "open_quote"], [str.slice(1, -1), "str"], ['"', "close_quote"]])
-            } else {
-                lexeme_tab = lexeme_tab.concat(find_tokens(str))
-            }
-        })
-    return lexeme_tab
+    let acc: ACC = []
+    // допоміжна штука
+    function cat_and_add (str: ACC, n = undefined) {
+        text_pr = text_pr.slice(n | str[0][0].length)
+        acc = acc.concat(str)
+    }
+
+    // ЯДРО
+    while (text_pr.length != 0) {
+        // якщо на вході мусор
+        if (/^[\s ]/.test(text_pr)) {
+            text_pr = text_pr.slice(/^[\s ]/.exec(text_pr)[0].length)
+        }
+
+        // якщо на вході "
+        if (text_pr[0] === '"') {
+            let str = str_analise(text_pr)
+            cat_and_add(str, str[1][0].length + 2)
+            continue
+        }
+
+        // якщо на вході число
+        if (/\d/.test(text_pr[0])) {
+            cat_and_add(type_of_number(text_pr))
+            continue
+        }
+
+        // припустим на вході токен
+        let token = find_tokens(text_pr)
+        if (typeof token !== "number") {
+            cat_and_add(token)
+        }
+    }
+
+    return acc
 }
