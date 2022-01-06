@@ -1,5 +1,3 @@
-import {isNull} from "util";
-
 export default function lexing(text_pr: string): Array<Array<string>> {
     /**
      * LEXING
@@ -17,8 +15,9 @@ export default function lexing(text_pr: string): Array<Array<string>> {
         // todo баг з невідомим символами і неочікувані тектові вставки
     const tokens: Object = {
             "int ": "int_keyword",
-            "main": "іdentifier",
+            "float ": "float_keyword",
             "(": "open parentheses",
+            "=": "to assign",
             ")": "close parentheses",
             "{": "open brace",
             "return ": "return_keyword",
@@ -36,15 +35,15 @@ export default function lexing(text_pr: string): Array<Array<string>> {
          * */
 
         if (str.includes('.'))
-            return [[/\d[.]\d/.exec(str)[0], "float_nam"]]
+            return [[/\d[.]\d/.exec(str)[0], "float_num"]]
         else if (/\d/.test(str))
-            return [[/\d/.exec(str)[0], "int_nam"]]
+            return [[/\d/.exec(str)[0], "int_num"]]
         return []
     }
 
     function str_analise(str: string): ACC {
         /**
-         * знаходить строчки
+         * знаходить все що типу str
          * */
         return [['"', "open_quote"], [/".*?"/.exec(str)[0].slice(1, -1), "str"], ['"', "close_quote"]]
     }
@@ -59,6 +58,17 @@ export default function lexing(text_pr: string): Array<Array<string>> {
             }
         }
         return NaN
+    }
+
+    function test_on_var(str: string): ACC {
+        /**
+         * Знаходить ім'я змінної або функції
+         * */
+        const num = str.search(/[ /'`&?!%=*+-/".]/)
+        if (num != -1)
+            return [[str.slice(num), "var_or_fun"]]
+        //todo написать помилку
+        return []
     }
 
 
@@ -93,6 +103,12 @@ export default function lexing(text_pr: string): Array<Array<string>> {
         let token = find_tokens(text_pr)
         if (typeof token !== "number") {
             cat_and_add(token)
+            continue
+        }
+
+        // якщо на вході ім'я переменной
+        if (/[A-Za-z]/.test(text_pr[0])) {
+            cat_and_add(test_on_var(text_pr))
         }
     }
 
