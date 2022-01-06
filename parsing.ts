@@ -41,14 +41,13 @@ export default function parsing (tokens: Array<Array<string>>): any {
         return tokens.shift()[1] === token ? i : find_tokens(tokens, token, i + 1)
     }
 
-    function end_of_the_block(tokens: Array<Array<string>>, acc = 1, i = 0): number {
+    function end_of_the_block(tokens: Array<Array<string>>, acc = 1, i = -1): number {
         /**
          * Знаходить межі блоку
          * Помилка, якщо блок не закритий
          * */
-
-        if (tokens.length === 0) return -1 //todo помилка
         if (acc === 0) return i
+        if (tokens.length === 0) return -1 //todo помилка
         switch (tokens.shift()[1]) {
             case ("open brace"):
                 return end_of_the_block(tokens, acc + 1, i + 1)
@@ -58,6 +57,7 @@ export default function parsing (tokens: Array<Array<string>>): any {
                 return end_of_the_block(tokens, acc, i + 1)
         }
     }
+
 
     function analysis(parentNode: Node, tokens: Array<Array<string>> ): Array<Node> {
         /**
@@ -77,18 +77,22 @@ export default function parsing (tokens: Array<Array<string>>): any {
             if (tokens[0][1] === "int_keyword" || tokens[0][1] === "float_keyword") {
                 // узнаєм тип
                 thisNode.returnType = find_out_the_type(tokens[0][1])
-
                 if (tokens[1][1] === "var_or_fun") {
                     // узнали ім'я
                     thisNode.name = tokens[1][0]
                     if (tokens[2][1] === "open parentheses") {
                         thisNode.type = "function"
-                        const i = find_tokens(tokens.slice(3), "open brace")
-                        const end = end_of_the_block(tokens.slice(i))
-                        thisNode.body.concat(analysis(thisNode, tokens.slice(i + 1, end)));
+                        tokens = tokens.slice(3)
+                        // todo заглушка для аналізу параметрів функції
+                        // початок роботи з тілом функції
+                        const start = find_tokens([...tokens], "open brace") + 1
+                        tokens = tokens.slice(start)
+                        // находимо кінець тіла
+                        const end = end_of_the_block([...tokens])
+                        // рекурсивно обробляємо тіло функції
+                        thisNode.body = thisNode.body.concat(analysis(thisNode, tokens.slice(0, end)));
+                        // видаляємо оброблені токени
                         tokens = tokens.slice(end + 1)
-                        continue
-                        // todo тіло фунції
 
                     } else if (tokens[2][1] === "semicolon") {
                         thisNode.type = "var"
@@ -103,13 +107,16 @@ export default function parsing (tokens: Array<Array<string>>): any {
                 // todo помилка очікування
                 // -------------------- return .... ----------------------------
             } else if (tokens[0][1] === "return_keyword") {
-                const i = find_tokens(tokens, "semicolon")
-                const childNode: Node = analysis(new Node(), tokens.slice(1, i))[0]
-                if (find_out_the_type(tokens[1][1]) === childNode.returnType) {
+                console.log("return");
+                const end = find_tokens([...tokens], "semicolon")
+
+                const childNode: Node = analysis(new Node(), tokens.slice(1, end))[0]
+                console.log("childNode= ", childNode);
+
+                if (parentNode.returnType === childNode.returnType) {
                     thisNode.body.push(childNode)
                 }
-                tokens = tokens.slice(i + 1)
-                continue
+                tokens = tokens.slice(end + 1)
 
             // todo помилка невірного повернення типа
             // -------------------- 0 ----------------------------
@@ -133,8 +140,8 @@ export default function parsing (tokens: Array<Array<string>>): any {
         }
         return arrNode
     }
-
-    //analysis(new Node(), tokens)
+    // ------------ Тестування --------------------
+    console.log(tokens)
+    console.log("AST: ", analysis(new Node(), tokens));
 }
 
-// ------------ Тестування --------------------

@@ -64,9 +64,9 @@ export default function lexing(text_pr: string): Array<Array<string>> {
         /**
          * Знаходить ім'я змінної або функції
          * */
-        const num = str.search(/[ /'`&?!%=*+-/".]/)
+        const num = str.search(/[ /()'`&?!%=*+".]/)
         if (num != -1)
-            return [[str.slice(num), "var_or_fun"]]
+            return [[str.slice(0, num), "var_or_fun"]]
         //todo написать помилку
         return []
     }
