@@ -23,7 +23,8 @@ export default function lexing(text_pr: string): Array<Array<string>> {
             "return ": "return_keyword",
             ";": "semicolon",
             "}": "close brace",
-            "+": "add_keyword"
+            "+": "add_keyword",
+            "printf": "print"
         }
 
     // вихідна структура даних

@@ -182,7 +182,21 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                     }
                 }
                 tokens = tokens.slice(1)
+            //--------------printf();---------------------------
+            } else if (tokens[0][1] === "print") {
+                if (tokens[1][1] === "open parentheses" ) {
+                    const end:number = find_tokens(tokens.slice(2),"close parentheses")
+                    if (tokens[1 + end][1] === "semicolon") {
+                        thisNode.type = "print"
+                        thisNode.returnType = "NaN"
+                        thisNode.body = analysis(thisNode, tokens.slice(2, end))
+                        tokens = tokens.slice(end + 1)
+                    }
+                    // todo очікується закривання строки
+                }
+                // todo помилка без дужок
             }
+
 
             // todo поилка
             arrNode.push(thisNode)

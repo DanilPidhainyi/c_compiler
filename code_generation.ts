@@ -1,6 +1,6 @@
 export default function code_generation (AST): string {
 
-    let data: string = ""
+    let data: string = "tpt db '%d',0\n"
 
     function generation (AST) {
         function create(node) {
@@ -12,7 +12,9 @@ export default function code_generation (AST): string {
                     body += 'end ' +  node.name + '\n'
                     return body
                 case 'return':
-                    return  generation(node.body) + '\n' + "ret " + '\n'
+                    return "invoke  crt__getch\n" +
+                            "invoke  crt_exit,0\n" +
+                            generation(node.body) + '\n' + "ret " + '\n'
                 case 'number':
                     return node.name
                 case 'add':
@@ -30,6 +32,9 @@ export default function code_generation (AST): string {
                 case 'var':
                     return node.name
                     //todo змінні
+                case 'print':
+                    return "invoke  crt_printf, ADDR tpt, " + generation(node.body) + "\n"
+
             }
         }
         return AST.map(create)
