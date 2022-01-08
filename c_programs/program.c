@@ -8,5 +8,6 @@ int main() {
         a = a + 1;
     } while (b != a);
 
-   return acc;
+
+   return 0;
 }

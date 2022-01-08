@@ -14,6 +14,8 @@ class Node {
 
 export default function parsing (tokens: Array<Array<string>>): Array<Node> {
 
+    const listVar: Array<Node> = []
+
     function find_out_the_type(token: string):string {
         /**
          * узнать int або float
@@ -54,7 +56,38 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                 return end_of_the_block(tokens, acc, i + 1)
         }
     }
+    function mat_analysis(tokens: Array<Array<string>> ): Node {
+        /**
+         * Будує AST для математичних виразів
+         */
+        const thisNode = new Node()
+        // --------- + -----------
+        for (let i = 0; i < tokens.length; i += 1) {
+            if (tokens[i][1] === "add_keyword") {
+                thisNode.type = "add"
+                thisNode.name = "+"
+                thisNode.body = [mat_analysis(tokens.slice(0, i)), mat_analysis(tokens.slice(i + 1))]
+                if (thisNode.body[0].returnType === thisNode.body[1].returnType) {
+                    thisNode.returnType = thisNode.body[1].returnType
+                    // todo помилка типів
+                }
+                return thisNode
+            }
+        }
 
+        // --------- = -----------
+        for (let i = 0; i < tokens.length; i += 1) {
+            if (tokens[i][1] === "to assign") {
+                thisNode.type = "to assign"
+                thisNode.name = analysis(thisNode, [tokens[i - 1]])[0][0]
+                thisNode.body = [mat_analysis(tokens.slice(i + 1))]
+                thisNode.returnType = thisNode.body[0].returnType
+                return thisNode
+            }
+        }
+
+        return analysis(thisNode, [...tokens])[0]
+    }
 
     function analysis(parentNode: Node, tokens: Array<Array<string>> ): Array<Node> {
         /**
@@ -91,12 +124,13 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                         // видаляємо оброблені токени
                         tokens = tokens.slice(end + 1)
 
-                    } else if (tokens[2][1] === "semicolon") {
-                        thisNode.type = "var"
-                        // todo об'явить і присвоїть змінну
-                    } else if (tokens[2][1] === "to assign") { //;
-                        thisNode.type = "var"
-                        // todo об'явить змінну
+                    } else if (tokens[2][1] === "to assign") {
+                        thisNode.type = "new_var"
+                        thisNode.name = tokens[1][0]
+                        const end = find_tokens([...tokens], "semicolon")
+                        thisNode.body = [mat_analysis(tokens.slice(1, end))]
+                        listVar.push(thisNode)
+                        tokens = tokens.slice(end + 1)
                     }
                     // todo помилка невідомий символ
 
@@ -107,14 +141,14 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                 thisNode.type = "return"
                 const end = find_tokens([...tokens], "semicolon")
 
-                const childNode: Node = analysis(new Node(), tokens.slice(1, end))[0]
+                // тіло ретюрна
+                const childNode: Node = mat_analysis(tokens.slice(1, end))
                 console.log("childNode= ", childNode);
 
                 if (parentNode.returnType === childNode.returnType) {
                     thisNode.body.push(childNode)
                 }
                 tokens = tokens.slice(end + 1)
-
             // todo помилка невірного повернення типа
             // -------------------- 0 ----------------------------
             } else if (tokens[0][1] === "int_num") {
@@ -133,7 +167,23 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                 thisNode.returnType = "string"
                 thisNode.name = tokens[1][0]
                 tokens = tokens.slice(3)
+            // --------------- ; -------------------------
+            } else if (tokens[0][1] === "semicolon") {
+                tokens = tokens.slice(1)
+            //--------------- a ------------------------
+            } else if (tokens[0][1] === "var_or_fun") {
+                thisNode.name = tokens[0][0]
+                thisNode.type = "var"
+                for (let node of listVar) {
+                    if (node.name === thisNode.name) {
+                        thisNode.returnType = node.returnType
+                        thisNode.body = node.body
+                        break
+                    }
+                }
+                tokens = tokens.slice(1)
             }
+
             // todo поилка
             arrNode.push(thisNode)
         }
