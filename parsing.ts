@@ -1,21 +1,18 @@
-export default function parsing (tokens: Array<Array<string>>): any {
+class Node {
+    /**
+     * Структура даннних AST
+     * Складається з Node
+     * type - відображає конструкцію (змінна функція цикл ...)
+     * returnType - відображає (void int ...)
+     * */
+    name: string
+    type: string = ""
+    params: Array<Node>
+    body: Array<Node> = []
+    returnType: string = ""
+}
 
-    class Node {
-        /**
-         * Структура даннних AST
-         * Складається з Node
-         * type - відображає конструкцію (змінна функція цикл ...)
-         * returnType - відображає (void int ...)
-         * */
-        name: string
-        type: string = ""
-        params: Array<Node>
-        body: Array<Node> = []
-        returnType: string = ""
-    }
-    function type_fun() {
-
-    }
+export default function parsing (tokens: Array<Array<string>>): Array<Node> {
 
     function find_out_the_type(token: string):string {
         /**
@@ -107,7 +104,7 @@ export default function parsing (tokens: Array<Array<string>>): any {
                 // todo помилка очікування
                 // -------------------- return .... ----------------------------
             } else if (tokens[0][1] === "return_keyword") {
-                console.log("return");
+                thisNode.type = "return"
                 const end = find_tokens([...tokens], "semicolon")
 
                 const childNode: Node = analysis(new Node(), tokens.slice(1, end))[0]
@@ -121,11 +118,13 @@ export default function parsing (tokens: Array<Array<string>>): any {
             // todo помилка невірного повернення типа
             // -------------------- 0 ----------------------------
             } else if (tokens[0][1] === "int_num") {
+                thisNode.type = "number"
                 thisNode.returnType = "int"
                 thisNode.name = tokens[0][0]
                 tokens = tokens.slice(1)
             // -------------------- 0.5 ----------------------------
             } else if (tokens[0][1] === "float_num") {
+                thisNode.type = "number"
                 thisNode.returnType = "float"
                 thisNode.name = tokens[0][0]
                 tokens = tokens.slice(1)
@@ -140,8 +139,7 @@ export default function parsing (tokens: Array<Array<string>>): any {
         }
         return arrNode
     }
-    // ------------ Тестування --------------------
-    console.log(tokens)
-    console.log("AST: ", analysis(new Node(), tokens));
+
+    return analysis(new Node(), tokens)
 }
 
