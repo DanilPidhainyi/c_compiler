@@ -28,10 +28,8 @@ export default function code_generation (AST): string {
                         (node.returnType === 'int' ? ' DW ' : ' DQ ') +
                         variable + ';\n'
                     return ''
-                //todo змінні
                 case 'var':
                     return node.name
-                    //todo змінні
                 case 'print':
                     return "invoke  crt_printf, ADDR tpt, " + generation(node.body) + "\n"
 
