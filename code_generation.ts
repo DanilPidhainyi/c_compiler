@@ -1,6 +1,8 @@
+import {json} from "stream/consumers";
+
 export default function code_generation (AST): string {
 
-    let data: string = "tpt db '%d',0\n"
+    let data: string = "tpt db '%d', 0\n"
 
     function generation (AST) {
         function create(node) {
@@ -14,7 +16,7 @@ export default function code_generation (AST): string {
                 case 'return':
                     return "invoke  crt__getch\n" +
                             "invoke  crt_exit,0\n" +
-                            generation(node.body) + '\n' + "ret " + '\n'
+                            "ret " + generation(node.body) + '\n'
                 case 'number':
                     return node.name
                 case 'add':
@@ -23,22 +25,25 @@ export default function code_generation (AST): string {
                 case 'do_while':
                     //todo цикл
                 case 'new_var':
-                    const variable = node.body[0].name || '0'
+                    const variable = '0'
                     data += node.name +
                         (node.returnType === 'int' ? ' DW ' : ' DQ ') +
-                        variable + ';\n'
+                        variable + '\n'
                     return ''
                 case 'var':
                     return node.name
+                case 'to assign':
+                    return 'mov ' + node.name + ', ' + generation(node.body) + '\n'
                 case 'print':
+                    // todo освободить регістр у ньому пощитать і отправить на прінт
                     return "invoke  crt_printf, ADDR tpt, " + generation(node.body) + "\n"
 
             }
         }
-        return AST.map(create)
+        return AST.map(create).join('\n')
     }
 
-    let body = generation(AST).join('')
+    let body = generation(AST)
 
     return '.386\n' +
         '.model flat, stdcall\n' +
@@ -47,11 +52,11 @@ export default function code_generation (AST): string {
         '\n' +
         '\n' +
         'data segment\n' +
-        data +
+        data + '\n' +
         'data ends\n' +
         '\n' +
         'text segment\n' +
-         body +
+         body + '\n' +
         'text ends'
 
 }

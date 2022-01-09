@@ -79,8 +79,11 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
         for (let i = 0; i < tokens.length; i += 1) {
             if (tokens[i][1] === "to assign") {
                 thisNode.type = "to assign"
-                thisNode.name = analysis(thisNode, [tokens[i - 1]])[0][0]
+                // todo name = analysis(thisNode, [tokens[i - 1]])[0].name
+                thisNode.name = tokens[i-1][0]
+                console.log("-------------------------", tokens.slice(i + 1))
                 thisNode.body = [mat_analysis(tokens.slice(i + 1))]
+                console.log("-------------------------", thisNode.body)
                 thisNode.returnType = thisNode.body[0].returnType
                 return thisNode
             }
@@ -102,7 +105,7 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
 
         while (tokens.length != 0) {
 
-            const thisNode = new Node()
+            let thisNode: Node = new Node()
             // -------------------- int .... ----------------------------
             if (tokens[0][1] === "int_keyword" || tokens[0][1] === "float_keyword") {
                 // узнаєм тип
@@ -124,16 +127,40 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                         // видаляємо оброблені токени
                         tokens = tokens.slice(end + 1)
 
-                    } else if (tokens[2][1] === "to assign") {
+                    // ------------ int a -----------;
+                    } else if (tokens[2][1] === "to assign" || tokens[2][1] === "semicolon") {
+                        console.log("нова -----------------")
                         thisNode.type = "new_var"
                         thisNode.name = tokens[1][0]
-                        const end = find_tokens([...tokens], "semicolon")
-                        thisNode.body = [mat_analysis(tokens.slice(1, end))]
-                        listVar.push(thisNode)
-                        tokens = tokens.slice(end + 1)
+                        thisNode.returnType = "int"
+                        const newNode = new Node()
+                        newNode.type = thisNode.type
+                        newNode.name = thisNode.name
+                        newNode.returnType = thisNode.returnType
+                        // todo провірить на повторне визначення
+                        listVar.push(newNode)
+                        console.log(listVar);
+                        tokens = tokens.slice(1)
+                        if (tokens[1][1] === "semicolon") {
+                            tokens = tokens.slice(2)
+                        }
+
+                        // console.log("toc= ", tokens)
+                        // thisNode.type = "new_var"
+                        // thisNode.name = tokens[1][0]
+                        // // todo ОБРОБИТЬ ЛИШЕ int a
+                        // const end = find_tokens([...tokens], "semicolon")
+                        // console.log("end= " ,end)
+                        // thisNode.body = analysis(thisNode, [tokens[3]])
+                        // listVar.push(thisNode)
+                        // console.log("----------------------------------------------")
+                        // console.log(tokens.slice(1, end))
+                        // console.log(thisNode)
+                        // console.log(thisNode.body)
+                        // tokens = tokens.slice(end + 1)
+                        // console.log("toc= ", tokens)
                     }
                     // todo помилка невідомий символ
-
                 }
                 // todo помилка очікування
                 // -------------------- return .... ----------------------------
@@ -172,24 +199,82 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                 tokens = tokens.slice(1)
             //--------------- a ------------------------
             } else if (tokens[0][1] === "var_or_fun") {
-                thisNode.name = tokens[0][0]
-                thisNode.type = "var"
-                for (let node of listVar) {
-                    if (node.name === thisNode.name) {
-                        thisNode.returnType = node.returnType
-                        thisNode.body = node.body
-                        break
+                // якщо присвоєння
+                if (tokens.length > 1 && tokens[1][1] === "to assign") {
+                    for (let node of listVar) {
+                        if (node.name === tokens[0][0]) {
+                            const end = find_tokens([...tokens], "semicolon")
+                            thisNode = mat_analysis(tokens.slice(0, end))
+                            // node.body = [mat_analysis(tokens.slice(0, end))]
+                            // thisNode.name = node.name
+                            // thisNode.body = node.body
+                            // thisNode.type = "to assign"
+                            // thisNode.returnType = node.returnType
+                            tokens = tokens.slice(end + 1)
+
+
+                        }
                     }
+
+                // якщо отримання
+                } else {
+                    for (let node of listVar) {
+                        if (node.name === tokens[0][0]) {
+                            thisNode.name = node.name
+                            thisNode.body = node.body
+                            thisNode.returnType = node.returnType
+                            thisNode.type = "var"
+                        }
+                    }
+                    tokens = tokens.slice(1)
                 }
-                tokens = tokens.slice(1)
+
+
+
+                // console.log("a = ", tokens)
+                // // якщо присвоєння даних
+                // if (tokens.length > 1 && tokens[1][1] === "to assign") {
+                //     const end = find_tokens([...tokens], "semicolon")
+                //     thisNode = mat_analysis(tokens.slice(end))
+                //     // for (let node of listVar) {
+                //     //     if (node.name === tokens[0][0]) {
+                //     //         thisNode.type = "var"
+                //     //         thisNode.name = node.name
+                //     //         thisNode.returnType = node.returnType
+                //     //         thisNode.body =
+                //     //
+                //     //         break
+                //     //     }
+                //     //
+                //     // }
+                //     // thisNode.type = "to assign"
+                //     // thisNode.name = tokens[0][0]
+                //     // thisNode.body = [mat_analysis(tokens.slice(end))]
+                //     tokens = tokens.slice(end + 1)
+                // // якщо повертання даних
+                // } else {
+                //     thisNode.name = tokens[0][0]
+                //     thisNode.type = "var"
+                //     for (let node of listVar) {
+                //         if (node.name === thisNode.name) {
+                //             thisNode.returnType = node.returnType
+                //             thisNode.body = node.body
+                //             break
+                //         }
+                //     }
+                //     console.log("a = ", thisNode)
+                //     console.log("b = ", thisNode.body)
+                //     tokens = tokens.slice(1)
+
+
             //--------------printf();---------------------------
             } else if (tokens[0][1] === "print") {
-                if (tokens[1][1] === "open parentheses" ) {
-                    const end:number = find_tokens(tokens.slice(2),"close parentheses")
+                if (tokens[1][1] === "open parentheses") {
+                    const end: number = find_tokens(tokens.slice(2), "close parentheses") + 2
                     if (tokens[1 + end][1] === "semicolon") {
                         thisNode.type = "print"
                         thisNode.returnType = "NaN"
-                        thisNode.body = analysis(thisNode, tokens.slice(2, end))
+                        thisNode.body = [mat_analysis(tokens.slice(2, end))]
                         tokens = tokens.slice(end + 1)
                     }
                     // todo очікується закривання строки
@@ -199,7 +284,9 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
 
 
             // todo поилка
+            console.log("thisssssssssss ", thisNode)
             arrNode.push(thisNode)
+
         }
         return arrNode
     }
