@@ -61,6 +61,20 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
          * Будує AST для математичних виразів
          */
         const thisNode = new Node()
+        // --------- = -----------
+        for (let i = 0; i < tokens.length; i += 1) {
+            if (tokens[i][1] === "to assign") {
+                thisNode.type = "to assign"
+                // todo name = analysis(thisNode, [tokens[i - 1]])[0].name
+                thisNode.name = tokens[i-1][0]
+                console.log("-------------------------", tokens.slice(i + 1))
+                thisNode.body = [mat_analysis(tokens.slice(i + 1))]
+                console.log("-------------------------", thisNode.body)
+                thisNode.returnType = thisNode.body[0].returnType
+                return thisNode
+            }
+        }
+
         // --------- + -----------
         for (let i = 0; i < tokens.length; i += 1) {
             if (tokens[i][1] === "add_keyword") {
@@ -75,19 +89,7 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
             }
         }
 
-        // --------- = -----------
-        for (let i = 0; i < tokens.length; i += 1) {
-            if (tokens[i][1] === "to assign") {
-                thisNode.type = "to assign"
-                // todo name = analysis(thisNode, [tokens[i - 1]])[0].name
-                thisNode.name = tokens[i-1][0]
-                console.log("-------------------------", tokens.slice(i + 1))
-                thisNode.body = [mat_analysis(tokens.slice(i + 1))]
-                console.log("-------------------------", thisNode.body)
-                thisNode.returnType = thisNode.body[0].returnType
-                return thisNode
-            }
-        }
+
 
         return analysis(thisNode, [...tokens])[0]
     }

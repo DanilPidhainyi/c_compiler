@@ -20,8 +20,13 @@ export default function code_generation (AST): string {
                 case 'number':
                     return node.name
                 case 'add':
-                    return 'mov AX, ' + create(node.body[0]) + '\n' +
+                    if (node.body[0].type === "add" || node.body[1].type === "add") {
+                        return 'add AX, ' + create(node.body[1]) + '\n'
+                    } else {
+                        return 'mov AX, ' + create(node.body[0]) + '\n' +
                         'add AX, ' + create(node.body[1]) + '\n'
+                    }
+
                 case 'do_while':
                     //todo цикл
                 case 'new_var':
@@ -33,7 +38,12 @@ export default function code_generation (AST): string {
                 case 'var':
                     return node.name
                 case 'to assign':
-                    return 'mov ' + node.name + ', ' + generation(node.body) + '\n'
+                    if (node.body[0].type === "number") {
+                        return 'mov ' + node.name + ', ' + generation(node.body) + '\n'
+                    } else {
+                        return generation(node.body) + 'mov ' + node.name + ', AX' + '\n'
+                    }
+
                 case 'print':
                     // todo освободить регістр у ньому пощитать і отправить на прінт
                     return "invoke  crt_printf, ADDR tpt, " + generation(node.body) + "\n"
