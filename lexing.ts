@@ -1,3 +1,5 @@
+import error from "./error";
+
 export default function lexing(text_pr: string): Array<Array<string>> {
     /**
      * LEXING
@@ -16,6 +18,7 @@ export default function lexing(text_pr: string): Array<Array<string>> {
     const tokens: Object = {
             "int ": "int_keyword",
             "float ": "float_keyword",
+            "!=": "not =",
             "(": "open parentheses",
             "=": "to assign",
             ")": "close parentheses",
@@ -24,7 +27,9 @@ export default function lexing(text_pr: string): Array<Array<string>> {
             ";": "semicolon",
             "}": "close brace",
             "+": "add_keyword",
-            "printf": "print"
+            "printf": "print",
+            "do": "do_keyword",
+            "while": "while_keyword"
         }
 
     // вихідна структура даних
@@ -69,7 +74,8 @@ export default function lexing(text_pr: string): Array<Array<string>> {
         const num = str.search(/[ /()'`&?!%=*+".;]/)
         if (num != -1)
             return [[str.slice(0, num), "var_or_fun"]]
-        //todo написать помилку
+        else
+            error("незрозуміле ім'я", str)
         return []
     }
 
@@ -80,7 +86,7 @@ export default function lexing(text_pr: string): Array<Array<string>> {
         text_pr = text_pr.slice(n | str[0][0].length)
         acc = acc.concat(str)
     }
-
+    let i = 0
     // ЯДРО
     while (text_pr.length != 0) {
         // якщо на вході мусор
@@ -111,7 +117,14 @@ export default function lexing(text_pr: string): Array<Array<string>> {
         // якщо на вході ім'я переменной
         if (/[A-Za-z]/.test(text_pr[0])) {
             cat_and_add(test_on_var(text_pr))
+            continue
         }
+
+        // зависання
+        if (i === 1000) {
+            error("Аналіз неможливий", text_pr)
+        }
+        i += 1
     }
 
     return acc

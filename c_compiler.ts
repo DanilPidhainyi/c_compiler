@@ -7,7 +7,7 @@ import code_generation from "./code_generation";
 // список файлів у папці
 // fs.readdirSync(path.join(__dirname, "./c_programs/"))
 
-const name_file = "add"
+const name_file = "program"
 // шлях до файлу з кодом с
 const path_input_file: string = path.join(__dirname, "./c_programs/" + name_file + ".c")
 // шлях до вихідного коду asm

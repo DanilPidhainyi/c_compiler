@@ -1,13 +1,13 @@
-int a = 5;
-int b = 9;
-int acc = 0;
+int a = 1;
+int b;
+int f = 0;
 
 int main() {
+    b = 5;
     do {
-        acc = acc + a;
+        f = f + a;
         a = a + 1;
-    } while (b != a);
-
-
+    } while (a != b);
+    printf(f);
    return 0;
 }

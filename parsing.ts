@@ -1,3 +1,5 @@
+import error from "./error";
+
 class Node {
     /**
      * Структура даннних AST
@@ -46,7 +48,7 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
          * Помилка, якщо блок не закритий
          * */
         if (acc === 0) return i
-        if (tokens.length === 0) return -1 //todo помилка
+        if (tokens.length === 0) return -1
         switch (tokens.shift()[1]) {
             case ("open brace"):
                 return end_of_the_block(tokens, acc + 1, i + 1)
@@ -65,12 +67,19 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
         for (let i = 0; i < tokens.length; i += 1) {
             if (tokens[i][1] === "to assign") {
                 thisNode.type = "to assign"
-                // todo name = analysis(thisNode, [tokens[i - 1]])[0].name
                 thisNode.name = tokens[i-1][0]
-                console.log("-------------------------", tokens.slice(i + 1))
                 thisNode.body = [mat_analysis(tokens.slice(i + 1))]
-                console.log("-------------------------", thisNode.body)
                 thisNode.returnType = thisNode.body[0].returnType
+                return thisNode
+            }
+        }
+
+        // --------- != -----------
+        for (let i = 0; i < tokens.length; i += 1) {
+            if (tokens[i][1] === "not =") {
+                thisNode.type = "not ="
+                thisNode.body = [mat_analysis(tokens.slice(i + 1))]
+                thisNode.returnType = "bool"
                 return thisNode
             }
         }
@@ -83,7 +92,8 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                 thisNode.body = [mat_analysis(tokens.slice(0, i)), mat_analysis(tokens.slice(i + 1))]
                 if (thisNode.body[0].returnType === thisNode.body[1].returnType) {
                     thisNode.returnType = thisNode.body[1].returnType
-                    // todo помилка типів
+                } else {
+                    error("Типи не вірні", tokens.join(' '))
                 }
                 return thisNode
             }
@@ -131,7 +141,6 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
 
                     // ------------ int a -----------;
                     } else if (tokens[2][1] === "to assign" || tokens[2][1] === "semicolon") {
-                        console.log("нова -----------------")
                         thisNode.type = "new_var"
                         thisNode.name = tokens[1][0]
                         thisNode.returnType = "int"
@@ -139,32 +148,21 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                         newNode.type = thisNode.type
                         newNode.name = thisNode.name
                         newNode.returnType = thisNode.returnType
-                        // todo провірить на повторне визначення
+                        if (listVar.filter(n => n.name === newNode.name).length > 0) {
+                            error("Спроба повторно визначення змінної", tokens.join(' '))
+                        }
                         listVar.push(newNode)
-                        console.log(listVar);
                         tokens = tokens.slice(1)
                         if (tokens[1][1] === "semicolon") {
                             tokens = tokens.slice(2)
                         }
 
-                        // console.log("toc= ", tokens)
-                        // thisNode.type = "new_var"
-                        // thisNode.name = tokens[1][0]
-                        // // todo ОБРОБИТЬ ЛИШЕ int a
-                        // const end = find_tokens([...tokens], "semicolon")
-                        // console.log("end= " ,end)
-                        // thisNode.body = analysis(thisNode, [tokens[3]])
-                        // listVar.push(thisNode)
-                        // console.log("----------------------------------------------")
-                        // console.log(tokens.slice(1, end))
-                        // console.log(thisNode)
-                        // console.log(thisNode.body)
-                        // tokens = tokens.slice(end + 1)
-                        // console.log("toc= ", tokens)
+                    } else {
+                        error("Неочікуваний символ", tokens.join(' '))
                     }
-                    // todo помилка невідомий символ
+                } else {
+                    error("Неочікуваний символ", tokens.join(' '))
                 }
-                // todo помилка очікування
                 // -------------------- return .... ----------------------------
             } else if (tokens[0][1] === "return_keyword") {
                 thisNode.type = "return"
@@ -172,13 +170,13 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
 
                 // тіло ретюрна
                 const childNode: Node = mat_analysis(tokens.slice(1, end))
-                console.log("childNode= ", childNode);
 
                 if (parentNode.returnType === childNode.returnType) {
                     thisNode.body.push(childNode)
+                } else {
+                    error("функція повертає інший тип", tokens.join(' '))
                 }
                 tokens = tokens.slice(end + 1)
-            // todo помилка невірного повернення типа
             // -------------------- 0 ----------------------------
             } else if (tokens[0][1] === "int_num") {
                 thisNode.type = "number"
@@ -207,14 +205,8 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                         if (node.name === tokens[0][0]) {
                             const end = find_tokens([...tokens], "semicolon")
                             thisNode = mat_analysis(tokens.slice(0, end))
-                            // node.body = [mat_analysis(tokens.slice(0, end))]
-                            // thisNode.name = node.name
-                            // thisNode.body = node.body
-                            // thisNode.type = "to assign"
-                            // thisNode.returnType = node.returnType
                             tokens = tokens.slice(end + 1)
-
-
+                            break
                         }
                     }
 
@@ -226,48 +218,11 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                             thisNode.body = node.body
                             thisNode.returnType = node.returnType
                             thisNode.type = "var"
+                            break
                         }
                     }
                     tokens = tokens.slice(1)
                 }
-
-
-
-                // console.log("a = ", tokens)
-                // // якщо присвоєння даних
-                // if (tokens.length > 1 && tokens[1][1] === "to assign") {
-                //     const end = find_tokens([...tokens], "semicolon")
-                //     thisNode = mat_analysis(tokens.slice(end))
-                //     // for (let node of listVar) {
-                //     //     if (node.name === tokens[0][0]) {
-                //     //         thisNode.type = "var"
-                //     //         thisNode.name = node.name
-                //     //         thisNode.returnType = node.returnType
-                //     //         thisNode.body =
-                //     //
-                //     //         break
-                //     //     }
-                //     //
-                //     // }
-                //     // thisNode.type = "to assign"
-                //     // thisNode.name = tokens[0][0]
-                //     // thisNode.body = [mat_analysis(tokens.slice(end))]
-                //     tokens = tokens.slice(end + 1)
-                // // якщо повертання даних
-                // } else {
-                //     thisNode.name = tokens[0][0]
-                //     thisNode.type = "var"
-                //     for (let node of listVar) {
-                //         if (node.name === thisNode.name) {
-                //             thisNode.returnType = node.returnType
-                //             thisNode.body = node.body
-                //             break
-                //         }
-                //     }
-                //     console.log("a = ", thisNode)
-                //     console.log("b = ", thisNode.body)
-                //     tokens = tokens.slice(1)
-
 
             //--------------printf();---------------------------
             } else if (tokens[0][1] === "print") {
@@ -275,18 +230,37 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                     const end: number = find_tokens(tokens.slice(2), "close parentheses") + 2
                     if (tokens[1 + end][1] === "semicolon") {
                         thisNode.type = "print"
-                        thisNode.returnType = "NaN"
                         thisNode.body = [mat_analysis(tokens.slice(2, end))]
                         tokens = tokens.slice(end + 1)
+                    } else {
+                      error("очікується закривання строки", tokens.join(' '))
                     }
-                    // todo очікується закривання строки
+                } else {
+                    error("очікуться закривання дужок", tokens.join(' '))
                 }
-                // todo помилка без дужок
+            //----------------- do-while ---------
+            } else if (tokens[0][1] === "do_keyword") {
+                if (tokens[1][1] === "open brace") {
+                    const end: number = find_tokens(tokens.slice(2), "close brace") + 2
+                    thisNode.type = "do-while"
+                    thisNode.body = analysis(thisNode, tokens.slice(2, end))
+                    tokens = tokens.slice(end + 1)
+                    if (tokens[1][1] === "open parentheses") {
+                        const end: number = find_tokens(tokens.slice(1), "close parentheses") + 1
+                        thisNode.params = analysis(new Node(), [tokens[2]]).concat(analysis(new Node(), [tokens[4]]))
+                        thisNode.name = tokens[3][0].replace('!','=')
+                        tokens = tokens.slice(end + 1)
+                    } else {
+                        error("очікуться закривання дужок", tokens.join(' '))
+                    }
+                } else {
+                    error("очікуться закривання дужок", tokens.join(' '))
+                }
+
+            } else {
+                error("Щось пішло не так", tokens.join(' '))
             }
 
-
-            // todo поилка
-            console.log("thisssssssssss ", thisNode)
             arrNode.push(thisNode)
 
         }

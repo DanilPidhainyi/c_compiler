@@ -1,5 +1,3 @@
-import {json} from "stream/consumers";
-
 export default function code_generation (AST): string {
 
     let data: string = "tpt db '%d', 0\n"
@@ -24,11 +22,15 @@ export default function code_generation (AST): string {
                         return 'add AX, ' + create(node.body[1]) + '\n'
                     } else {
                         return 'mov AX, ' + create(node.body[0]) + '\n' +
-                        'add AX, ' + create(node.body[1]) + '\n'
+                            'add AX, ' + create(node.body[1]) + '\n'
                     }
+                case 'do-while':
 
-                case 'do_while':
-                    //todo цикл
+                    return ".repeat\n"+
+                        generation(node.body) +
+                        'mov DX, ' + create(node.params[0]) + '\n'+
+                        'mov CX, ' + create(node.params[1]) + '\n'+
+                        '.until (DX ' + node.name + ' CX)\n'
                 case 'new_var':
                     const variable = '0'
                     data += node.name +
@@ -48,9 +50,12 @@ export default function code_generation (AST): string {
                     // todo освободить регістр у ньому пощитать і отправить на прінт
                     return "invoke  crt_printf, ADDR tpt, " + generation(node.body) + "\n"
 
+                case 'not =':
+                    return create(node.body[0]) + ' != ' + create(node.body[1])
+
             }
         }
-        return AST.map(create).join('\n')
+        return AST.map(create).join('')
     }
 
     let body = generation(AST)
