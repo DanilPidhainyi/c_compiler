@@ -14,7 +14,8 @@ export default function code_generation (AST): string {
                 case 'return':
                     return "invoke  crt__getch\n" +
                             "invoke  crt_exit,0\n" +
-                            "ret " + generation(node.body) + '\n'
+                            "ret " +  '\n'
+                // "ret " + generation(node.body) + '\n
                 case 'number':
                     return node.name
                 case 'add':

@@ -32,6 +32,17 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
         }
     }
 
+    function float_to_int(node:Node ):Node {
+        /**
+         * Cпробувати привести
+         * float до int
+         */
+        node.name = /[0-9]+/.exec(node.name)[0]
+        node.returnType = 'int'
+        return node
+
+    }
+
     function find_tokens(tokens: Array<Array<string>>, token: string, i: number = 0): number {
         /**
          * знайти токен
@@ -93,7 +104,7 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                 if (thisNode.body[0].returnType === thisNode.body[1].returnType) {
                     thisNode.returnType = thisNode.body[1].returnType
                 } else {
-                    error("Типи не вірні", tokens.join(' '))
+                    error("Типи не вірні", tokens.map(n => n[0]).join(' '))
                 }
                 return thisNode
             }
@@ -125,6 +136,9 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                 if (tokens[1][1] === "var_or_fun") {
                     // узнали ім'я
                     thisNode.name = tokens[1][0]
+                    if (tokens.length < 3) {
+                        tokens.push([';', "semicolon"]);
+                    }
                     if (tokens[2][1] === "open parentheses") {
                         thisNode.type = "function"
                         tokens = tokens.slice(3)
@@ -140,16 +154,22 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                         tokens = tokens.slice(end + 1)
 
                     // ------------ int a -----------;
+                    // визначення
                     } else if (tokens[2][1] === "to assign" || tokens[2][1] === "semicolon") {
                         thisNode.type = "new_var"
                         thisNode.name = tokens[1][0]
-                        thisNode.returnType = "int"
+                        // todo проверку типів
+                        if (tokens[0][1] === "int_keyword") {
+                            thisNode.returnType = 'int'
+                        } else {
+                            thisNode.returnType = 'float'
+                        }
                         const newNode = new Node()
                         newNode.type = thisNode.type
                         newNode.name = thisNode.name
                         newNode.returnType = thisNode.returnType
                         if (listVar.filter(n => n.name === newNode.name).length > 0) {
-                            error("Спроба повторно визначення змінної", tokens.join(' '))
+                            error("Спроба повторно визначення змінної", tokens.map(n => n[0]).join(' '))
                         }
                         listVar.push(newNode)
                         tokens = tokens.slice(1)
@@ -158,10 +178,10 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                         }
 
                     } else {
-                        error("Неочікуваний символ", tokens.join(' '))
+                        error("Неочікуваний символ", tokens.map(n => n[0]).join(' '))
                     }
                 } else {
-                    error("Неочікуваний символ", tokens.join(' '))
+                    error("Неочікуваний символ", tokens.map(n => n[0]).join(' '))
                 }
                 // -------------------- return .... ----------------------------
             } else if (tokens[0][1] === "return_keyword") {
@@ -174,7 +194,7 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                 if (parentNode.returnType === childNode.returnType) {
                     thisNode.body.push(childNode)
                 } else {
-                    error("функція повертає інший тип", tokens.join(' '))
+                    error("функція повертає інший тип", tokens.map(n => n[0]).join(' '))
                 }
                 tokens = tokens.slice(end + 1)
             // -------------------- 0 ----------------------------
@@ -205,6 +225,15 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                         if (node.name === tokens[0][0]) {
                             const end = find_tokens([...tokens], "semicolon")
                             thisNode = mat_analysis(tokens.slice(0, end))
+                            if (node.returnType !== thisNode.returnType) {
+                                if (thisNode.body[0].type === "number") {
+                                    // todo поганий ход
+                                    thisNode.body[0] = float_to_int(thisNode.body[0])
+                                    thisNode.returnType = node.returnType
+                                } else {
+                                    error("вираз має інший тип", tokens.map(n => n[0]).join(' '))
+                                }
+                            }
                             tokens = tokens.slice(end + 1)
                             break
                         }
@@ -233,10 +262,10 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                         thisNode.body = [mat_analysis(tokens.slice(2, end))]
                         tokens = tokens.slice(end + 1)
                     } else {
-                      error("очікується закривання строки", tokens.join(' '))
+                      error("очікується закривання строки", tokens.map(n => n[0]).join(' '))
                     }
                 } else {
-                    error("очікуться закривання дужок", tokens.join(' '))
+                    error("очікуться закривання дужок", tokens.map(n => n[0]).join(' '))
                 }
             //----------------- do-while ---------
             } else if (tokens[0][1] === "do_keyword") {
@@ -251,14 +280,14 @@ export default function parsing (tokens: Array<Array<string>>): Array<Node> {
                         thisNode.name = tokens[3][0].replace('!','=')
                         tokens = tokens.slice(end + 1)
                     } else {
-                        error("очікуться закривання дужок", tokens.join(' '))
+                        error("очікуться закривання дужок", tokens.map(n => n[0]).join(' '))
                     }
                 } else {
-                    error("очікуться закривання дужок", tokens.join(' '))
+                    error("очікуться закривання дужок", tokens.map(n => n[0]).join(' '))
                 }
 
             } else {
-                error("Щось пішло не так", tokens.join(' '))
+                error("Щось пішло не так", tokens.map(n => n[0]).join(' '))
             }
 
             arrNode.push(thisNode)

@@ -1,4 +1,4 @@
-int a = 1;
+int a = 1.1;
 int b;
 int f = 0;
 

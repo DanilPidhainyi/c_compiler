@@ -30,7 +30,7 @@ mov CX, b
 invoke  crt_printf, ADDR tpt, f
 invoke  crt__getch
 invoke  crt_exit,0
-ret 0
+ret 
 
 end main
 
