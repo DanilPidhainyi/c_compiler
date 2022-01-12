@@ -7,6 +7,7 @@ import code_generation from "./code_generation";
 // список файлів у папці
 // fs.readdirSync(path.join(__dirname, "./c_programs/"))
 
+// ім'я зчитуваного файлу
 const name_file = "program"
 // шлях до файлу з кодом с
 const path_input_file: string = path.join(__dirname, "./c_programs/" + name_file + ".c")
@@ -36,7 +37,7 @@ const error = err => {
     }
 }
 
-// синхронни запис у файл
+// асинхронни запис у файл
 fs.writeFile(path_return_file, cod, error)
 
 // запис у батнік
@@ -46,3 +47,4 @@ fs.writeFile(
     "link /subsystem:console .\\" + name_file + ".obj\n" +
     "pause",
     error)
+

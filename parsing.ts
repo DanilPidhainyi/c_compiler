@@ -16,6 +16,14 @@ class Node {
 
 export default function parsing (tokens: Array<Array<string>>): Array<Node> {
 
+    /**
+     * PARSING
+     *
+     * @tokens - таблиця лексем
+     *
+     * @return Повертає AST з Node
+     */
+
     const listVar: Array<Node> = []
 
     function find_out_the_type(token: string):string {

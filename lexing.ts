@@ -9,7 +9,6 @@ export default function lexing(text_pr: string): Array<Array<string>> {
      * @return - список токенів
      *
      * Мова: C
-     * Система числення що повертається : Decimal, Bin
      * Типи, що обробляються: int, float
      *
      *

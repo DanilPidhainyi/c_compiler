@@ -1,5 +1,13 @@
 export default function code_generation (AST): string {
 
+    /**
+     * CODE_GENERATION
+     *
+     * @AST
+     *
+     * @return текст програми на asm
+     */
+
     let data: string = "tpt db '%d', 0\n"
 
     function generation (AST) {
